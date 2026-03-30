@@ -109,3 +109,19 @@ if [ -d *"luci-app-netspeedtest"* ]; then
 
 	cd $PKG_PATH && echo "netspeedtest has been fixed!"
 fi
+
+# 修复 luci-light 依赖 aurora 的问题（如果启用luci-light）
+LL_FILE=$(find ./feeds/luci/ -maxdepth 3 -type f -wholename "*/luci-light/Makefile" 2>/dev/null)
+if [ -f "$LL_FILE" ] && grep -q "luci-theme-aurora" "$LL_FILE"; then
+    echo "Fixing luci-light dependency..."
+    sed -i 's/, luci-theme-aurora//g; s/luci-theme-aurora, //g; s/DEPENDS:=.*luci-theme-aurora/DEPENDS:=+luci-base/' "$LL_FILE"
+fi
+
+# 修复 Python 包依赖缺失警告（非致命，但清理日志）
+for MK in $(find ./feeds/packages/ -maxdepth 3 -name "Makefile" 2>/dev/null); do
+    if grep -q "python3-pkg-resources" "$MK"; then
+        sed -i 's/python3-pkg-resources/python3-setuptools/g' "$MK"
+    fi
+    if grep -q "python3-pysocks\|python3-unidecode" "$MK"; then
+        sed -i 's/python3-pysocks//g; s/python3-unidecode//g' "$MK"
+    fi
