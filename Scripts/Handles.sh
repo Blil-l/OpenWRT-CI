@@ -4,50 +4,6 @@
 
 PKG_PATH="$GITHUB_WORKSPACE/wrt/package/"
 
-#预置HomeProxy数据
-if [ -d *"homeproxy"* ]; then
-	echo " "
-
-	HP_RULE="surge"
-	HP_PATH="homeproxy/root/etc/homeproxy"
-
-	rm -rf ./$HP_PATH/resources/*
-
-	git clone -q --depth=1 --single-branch --branch "release" "https://github.com/Loyalsoldier/surge-rules.git" ./$HP_RULE/
-	cd ./$HP_RULE/ && RES_VER=$(git log -1 --pretty=format:'%s' | grep -o "[0-9]*")
-
-	echo $RES_VER | tee china_ip4.ver china_ip6.ver china_list.ver gfw_list.ver
-	awk -F, '/^IP-CIDR,/{print $2 > "china_ip4.txt"} /^IP-CIDR6,/{print $2 > "china_ip6.txt"}' cncidr.txt
-	sed 's/^\.//g' direct.txt > china_list.txt ; sed 's/^\.//g' gfw.txt > gfw_list.txt
-	mv -f ./{china_*,gfw_list}.{ver,txt} ../$HP_PATH/resources/
-
-	cd .. && rm -rf ./$HP_RULE/
-
-	cd $PKG_PATH && echo "homeproxy date has been updated!"
-fi
-
-#修改argon主题字体和颜色
-if [ -d *"luci-theme-argon"* ]; then
-	echo " "
-
-	cd ./luci-theme-argon/
-
-	sed -i "s/primary '.*'/primary '#31a1a1'/; s/'0.2'/'0.5'/; s/'none'/'bing'/; s/'600'/'normal'/" ./luci-app-argon-config/root/etc/config/argon
-
-	cd $PKG_PATH && echo "theme-argon has been fixed!"
-fi
-
-#修改aurora菜单式样
-if [ -d *"luci-app-aurora-config"* ]; then
-	echo " "
-
-	cd ./luci-app-aurora-config/
-
-	sed -i "s/nav_submenu_type '.*'/nav_submenu_type 'boxed-dropdown'/g" $(find ./root/ -type f -name "*aurora")
-
-	cd $PKG_PATH && echo "theme-aurora has been fixed!"
-fi
-
 #修改qca-nss-drv启动顺序
 NSS_DRV="../feeds/nss_packages/qca-nss-drv/files/qca-nss-drv.init"
 if [ -f "$NSS_DRV" ]; then
@@ -66,16 +22,6 @@ if [ -f "$NSS_PBUF" ]; then
 	sed -i 's/START=.*/START=86/g' $NSS_PBUF
 
 	cd $PKG_PATH && echo "qca-nss-pbuf has been fixed!"
-fi
-
-#修复TailScale配置文件冲突
-TS_FILE=$(find ../feeds/packages/ -maxdepth 3 -type f -wholename "*/tailscale/Makefile")
-if [ -f "$TS_FILE" ]; then
-	echo " "
-
-	sed -i '/\/files/d' $TS_FILE
-
-	cd $PKG_PATH && echo "tailscale has been fixed!"
 fi
 
 #修复Rust编译失败
@@ -97,31 +43,3 @@ if [ -f "$DM_FILE" ]; then
 
 	cd $PKG_PATH && echo "diskman has been fixed!"
 fi
-
-#修复luci-app-netspeedtest相关问题
-if [ -d *"luci-app-netspeedtest"* ]; then
-	echo " "
-
-	cd ./luci-app-netspeedtest/
-
-	sed -i '$a\exit 0' ./netspeedtest/files/99_netspeedtest.defaults
-	sed -i 's/ca-certificates/ca-bundle/g' ./speedtest-cli/Makefile
-
-	cd $PKG_PATH && echo "netspeedtest has been fixed!"
-fi
-
-# 修复 luci-light 依赖 aurora 的问题（如果启用luci-light）
-LL_FILE=$(find ./feeds/luci/ -maxdepth 3 -type f -wholename "*/luci-light/Makefile" 2>/dev/null)
-if [ -f "$LL_FILE" ] && grep -q "luci-theme-aurora" "$LL_FILE"; then
-    echo "Fixing luci-light dependency..."
-    sed -i 's/, luci-theme-aurora//g; s/luci-theme-aurora, //g; s/DEPENDS:=.*luci-theme-aurora/DEPENDS:=+luci-base/' "$LL_FILE"
-fi
-
-# 修复 Python 包依赖缺失警告（非致命，但清理日志）
-for MK in $(find ./feeds/packages/ -maxdepth 3 -name "Makefile" 2>/dev/null); do
-    if grep -q "python3-pkg-resources" "$MK"; then
-        sed -i 's/python3-pkg-resources/python3-setuptools/g' "$MK"
-    fi
-    if grep -q "python3-pysocks\|python3-unidecode" "$MK"; then
-        sed -i 's/python3-pysocks//g; s/python3-unidecode//g' "$MK"
-    fi
