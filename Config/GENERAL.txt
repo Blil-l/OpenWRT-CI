@@ -1,3 +1,13 @@
+# fail2ban 依赖 python3-pkg-resources → 禁用
+CONFIG_PACKAGE_fail2ban=n
+CONFIG_PACKAGE_luci-app-fail2ban=n
+# onionshare 依赖 python3-pysocks/unidecode
+CONFIG_PACKAGE_onionshare-cli=n
+CONFIG_PACKAGE_onionshare-gui=n
+# 其他可能触发警告的包（按需禁用）
+CONFIG_PACKAGE_python3-pkg-resources=n
+# setools 依赖 python3-pkg-resources
+CONFIG_PACKAGE_setools=n
 # ── 主题配置（仅官方） ──
 CONFIG_PACKAGE_luci-theme-bootstrap=y
 CONFIG_PACKAGE_luci-theme-material=n
